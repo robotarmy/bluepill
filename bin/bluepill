@@ -12,7 +12,8 @@ end
 # Default options
 options = {
   :log_file => "/var/log/bluepill.log",
-  :base_dir => "/var/bluepill"
+  :base_dir => "/var/bluepill",
+  :timeout => 10
 }
 
 OptionParser.new do |opts|
@@ -28,6 +29,10 @@ OptionParser.new do |opts|
   opts.on("-v", "--version") do
     puts "bluepill, version #{Bluepill::VERSION}"
     exit
+  end
+
+  opts.on('-t', '--timeout', "Timeout for commands sent to the daemon, in seconds. Defaults to 10.") do |timeout|
+    options[:timeout] = Integer(timeout)
   end
 
   help = lambda do
@@ -53,7 +58,7 @@ end.parse!
 
 APPLICATION_COMMANDS = %w(status start stop restart unmonitor quit log)
 
-controller = Bluepill::Controller.new(options.slice(:base_dir, :log_file))
+controller = Bluepill::Controller.new(options.slice(:base_dir, :log_file, :timeout))
 
 if controller.running_applications.include?(File.basename($0)) && File.symlink?($0)
   # bluepill was called as a symlink with the name of the target application
@@ -93,7 +98,7 @@ if options[:command] == "load"
     file_path = File.expand_path(file)
 
     exec(ruby, "-I#{load_path}", '-rbluepill', file_path)
-    
+
   else
     $stderr.puts "Can't find file: #{file}"
   end
