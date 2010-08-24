@@ -33,7 +33,7 @@ OptionParser.new do |opts|
     options[:timeout] = Integer(timeout)
   end
 
-  help = lambda do
+  help = proc do
     puts opts
     puts
     puts "Commands:"
