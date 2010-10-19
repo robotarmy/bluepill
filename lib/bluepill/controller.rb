@@ -54,6 +54,7 @@ module Bluepill
         Kernel.exec(tail)
       else
         $stderr.puts "Unknown command `%s` (or application `%s` has not been loaded yet)" % [command, command]
+        exit(1)
       end
     end
 
