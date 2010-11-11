@@ -43,49 +43,8 @@ module Bluepill
     
     # Returns the pid of the child that executes the cmd
     def daemonize(cmd, options = {})
-      rd, wr = IO.pipe
-
-      if child = Daemonize.safefork
-        # we do not wanna create zombies, so detach ourselves from the child exit status
-        ::Process.detach(child)
-        
-        # parent
-        wr.close
-        
-        daemon_id = rd.read.to_i
-        rd.close
-          
-        return daemon_id if daemon_id > 0
-        
-      else
-        # child
-        rd.close
-
-        drop_privileges(options[:uid], options[:gid])
-        
-        # if we cannot write the pid file as the provided user, err out
-        exit unless can_write_pid_file(options[:pid_file], options[:logger])
-        
-        to_daemonize = lambda do
-          # Setting end PWD env emulates bash behavior when dealing with symlinks
-          Dir.chdir(ENV["PWD"] = options[:working_dir]) if options[:working_dir]
-          options[:environment].each { |key, value| ENV[key.to_s] = value.to_s } if options[:environment]
-          
-          redirect_io(*options.values_at(:stdin, :stdout, :stderr))
-          
-          ::Kernel.exec(*Shellwords.shellwords(cmd))
-          exit
-        end
-
-        daemon_id = Daemonize.call_as_daemon(to_daemonize, nil, cmd)
-                
-        File.open(options[:pid_file], "w") {|f| f.write(daemon_id)}
-        
-        wr.write daemon_id        
-        wr.close
-
-        exit
-      end
+      bg_cmd = "sh -c '#{cmd}&'"
+      execute_blocking(bg_cmd,options)
     end
     
     # Returns the stdout, stderr and exit code of the cmd
